@@ -55,7 +55,7 @@ def create_app():
     @app.after_request
     def after_request(response):
         origin = request.headers.get('Origin')
-        if origin in ['http://localhost:5173', 'http://127.0.0.1:5173']:
+        if origin in ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://capstone-frontend-elib.vercel.app']:
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Credentials'] = 'true'
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
