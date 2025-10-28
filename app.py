@@ -5,8 +5,12 @@ import click
 from flask import Flask, request
 from flasgger import Swagger
 from swagger_config import swagger_template, swagger_config
+from dotenv import load_dotenv
 
+# Import des extensions Flask
 from config import db, jwt, migrate, cors, bcrypt
+
+# Import des modèles
 from models import User, Ebook, Category, Loan
 
 # Importation des blueprints
@@ -16,14 +20,17 @@ from routes.route_category import category_bp
 from routes.route_loan import loan_bp
 from api_docs import api_bp
 
-# Utilitaires
+# Import des utilitaires
 from utils.check_expired_loans import check_and_notify
 from utils.email_service import send_email
-from dotenv import load_dotenv
 
+# Charger les variables d'environnement
 load_dotenv()
 
 
+# =====================================================
+# Configuration de l'application Flask
+# =====================================================
 def create_app():
     app = Flask(__name__)
     app.config.from_object('config.Config')
@@ -55,10 +62,10 @@ def create_app():
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
         return response
 
-    # Swagger
+    # Swagger (documentation API)
     Swagger(app, config=swagger_config, template=swagger_template)
 
-    # Route d'accueil simple (liste les routes disponibles)
+    # Route de test (affiche toutes les routes disponibles)
     @app.route('/')
     def index():
         import urllib
@@ -89,18 +96,12 @@ def create_app():
 # =====================================================
 # Commande personnalisée : flask create-admin
 # =====================================================
-
-
 @click.command('create-admin')
 @with_appcontext
 @click.argument('email')
 @click.argument('password')
 def create_admin(email, password):
     """Créer un utilisateur administrateur."""
-    from models import User
-    from config import db
-
-    # Vérifie si l'utilisateur existe déjà
     if User.query.filter_by(email=email).first():
         click.echo(f"L'utilisateur {email} existe déjà.")
         return
@@ -118,8 +119,13 @@ def register_commands(app):
 
 
 # =====================================================
-# Lancement de l'application
+# Instance globale pour Gunicorn (Render, etc.)
+# =====================================================
+app = create_app()  # ✅ Permet à Render de lancer gunicorn app:app
+
+
+# =====================================================
+# Lancement local
 # =====================================================
 if __name__ == '__main__':
-    app = create_app()
     app.run(host='0.0.0.0', port=5000, debug=True)
