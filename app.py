@@ -1,3 +1,4 @@
+import os
 from werkzeug.security import generate_password_hash
 from flask.cli import with_appcontext
 import click
@@ -18,6 +19,9 @@ from api_docs import api_bp
 # Utilitaires
 from utils.check_expired_loans import check_and_notify
 from utils.email_service import send_email
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def create_app():

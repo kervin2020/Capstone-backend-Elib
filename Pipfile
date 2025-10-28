@@ -13,6 +13,8 @@ email-validator = "*"
 flask-restx = "*"
 pytest = "*"
 flasgger = "*"
+gunicorn = "*"
+dotenv = "*"
 
 [dev-packages]
 
