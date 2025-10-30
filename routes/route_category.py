@@ -28,31 +28,34 @@ def _require_admin():
 @jwt_required()
 def create_category():
     """
-    creer une nouvelle catégorie
-    
-      tags:
-        - categories
-        security:
-          - jwt: []
-        parameters:
-          - in: body
-            name: category
-            schema:
-                type: object
-                properties:
-                    name:
-                    type: string
-                    description:
-                    type: string
-                required:
-                    - name
-        responses:
-            201:
-                description: Catégorie créée
-            400:
-                description: Le nom de la catégorie est requis
-            403:
-                description: Accès interdit, vous n'êtes pas administrateur
+    Créer une nouvelle catégorie (Admin requis)
+    ---
+    tags:
+      - Catégories
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+              description: Nom de la catégorie.
+            description:
+              type: string
+              description: Description de la catégorie.
+    responses:
+      201:
+        description: Catégorie créée avec succès.
+      400:
+        description: Données d'entrée invalides.
+      403:
+        description: Accès non autorisé (admin requis).
     """
     err = _require_admin()
     if err:
@@ -83,15 +86,13 @@ def create_category():
 @category_bp.route('/categories', methods=['GET'])
 def get_categories():
     """
-    Récupérer toutes les catégories
-
+    Lister toutes les catégories
+    ---
     tags:
-        - categories
+      - Catégories
     responses:
-        200:
-            description: Liste des catégories récupérées
-        404:
-            description: Aucune catégorie trouvée
+      200:
+        description: Une liste de toutes les catégories.
     """
     categories = Category.query.all()
     return jsonify({'categories': [
@@ -107,21 +108,20 @@ def get_categories():
 @category_bp.route('/categories/<int:category_id>', methods=['GET'])
 def get_category(category_id):
     """
-    Récupérer une catégorie par son ID
-    
+    Obtenir les détails d'une catégorie
+    ---
     tags:
-        - categories
+      - Catégories
     parameters:
-        - in: path
-          name: category_id
-          required: true
-          schema:
-            type: integer
+      - name: category_id
+        in: path
+        type: integer
+        required: true
     responses:
-        200:
-            description: Catégorie récupérée
-        404:
-            description: Catégorie non trouvée
+      200:
+        description: Détails de la catégorie.
+      404:
+        description: Catégorie non trouvée.
     """
     category = Category.query.get_or_404(category_id)
     return jsonify({
@@ -136,21 +136,33 @@ def get_category(category_id):
 @jwt_required()
 def update_category(category_id):
     """
-    Mettre à jour une catégorie par son ID
-
+    Mettre à jour une catégorie (Admin requis)
+    ---
     tags:
-        - categories
+      - Catégories
+    security:
+      - Bearer: []
     parameters:
-        - in: path
-          name: category_id
-          required: true
-          schema:
-            type: integer
+      - name: category_id
+        in: path
+        type: integer
+        required: true
+      - in: body
+        name: body
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+            description:
+              type: string
     responses:
-        200:
-            description: Catégorie mise à jour
-        404:
-            description: Catégorie non trouvée
+      200:
+        description: Catégorie mise à jour avec succès.
+      403:
+        description: Accès non autorisé (admin requis).
+      404:
+        description: Catégorie non trouvée.
     """
     err = _require_admin()
     if err:
@@ -178,19 +190,24 @@ def update_category(category_id):
 @jwt_required()
 def delete_category(category_id):
     """
-    Supprimer une catégorie par son ID
-
+    Supprimer une catégorie (Admin requis)
+    ---
     tags:
-        - categories
+      - Catégories
+    security:
+      - Bearer: []
     parameters:
-        - in: path
-          name: category_id
-          required: true
-          schema:
-            type: integer
+      - name: category_id
+        in: path
+        type: integer
+        required: true
     responses:
-        200:
-            description: Catégorie supprimée
+      200:
+        description: Catégorie supprimée avec succès.
+      403:
+        description: Accès non autorisé (admin requis).
+      404:
+        description: Catégorie non trouvée.
     """
     err = _require_admin()
     if err:

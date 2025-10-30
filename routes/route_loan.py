@@ -30,29 +30,33 @@ def _require_admin():
 @jwt_required()
 def create_loan():
     """
-    creer un nouvel emprunt
-
+    Créer un nouvel emprunt
+    ---
     tags:
-      - loans
+      - Emprunts
     security:
-      - jwt: []
+      - Bearer: []
     parameters:
       - in: body
-        name: loan
+        name: body
+        required: true
         schema:
-            type: object
-            properties:
-              ebook_id:
-                type: integer
-            required:
-              - ebook_id
+          type: object
+          required:
+            - ebook_id
+          properties:
+            ebook_id:
+              type: integer
+              description: ID de l'ebook à emprunter.
     responses:
-        201:
-            description: Emprunt créé avec succès
-        400:
-            description: L'identifiant du livre est requis / Aucune copie disponible pour ce livre  
-
-    
+      201:
+        description: Emprunt créé avec succès.
+      400:
+        description: ID de l'ebook manquant ou livre non disponible.
+      401:
+        description: Token manquant ou invalide.
+      404:
+        description: Ebook non trouvé.
     """
     data = request.get_json()
     user_id = get_jwt_identity()
@@ -93,14 +97,17 @@ def create_loan():
 @jwt_required()
 def get_loans():
     """
-    Récupérer tous les prêts
-
+    Lister les emprunts
+    Affiche tous les emprunts pour un admin, sinon seulement ceux de l'utilisateur connecté.
+    ---
     tags:
-        - loans
+      - Emprunts
+    security:
+      - Bearer: []
     responses:
-        200:
-            description: Liste des prêts récupérés
-    """ 
+      200:
+        description: Une liste d'emprunts.
+    """
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
 
@@ -129,19 +136,24 @@ def get_loans():
 @jwt_required()
 def get_loan(loan_id):
     """
-    Récupérer un prêt par son ID
-
+    Obtenir les détails d'un emprunt
+    ---
     tags:
-        - loans 
+      - Emprunts
+    security:
+      - Bearer: []
     parameters:
-        - in: path
-          name: loan_id
-          required: true
-          schema:
-            type: integer
+      - name: loan_id
+        in: path
+        type: integer
+        required: true
     responses:
-        200:
-            description: prêt récupéré
+      200:
+        description: Détails de l'emprunt.
+      403:
+        description: Accès non autorisé.
+      404:
+        description: Emprunt non trouvé.
     """
     loan = Loan.query.get_or_404(loan_id)
     user_id = get_jwt_identity()
@@ -166,25 +178,26 @@ def get_loan(loan_id):
 @jwt_required()
 def update_loan(loan_id):
     """
-    retourner un prêt
-
+    Retourner un livre emprunté
+    ---
     tags:
-        - loans
-        security:
-          - jwt: []
-            parameters:
-              - in: path
-                name: loan_id
-                required: true
-                schema:
-                  type: integer
-            responses:
-                200:
-                    description: prêt retourné avec succès
-                403:
-                    description: Accès interdit, vous n'êtes pas propriétaire de ce prêt
-                400:
-                    description: Ce prêt a déjà été retourné
+      - Emprunts
+    security:
+      - Bearer: []
+    parameters:
+      - name: loan_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Livre retourné avec succès.
+      400:
+        description: Le livre a déjà été retourné.
+      403:
+        description: Accès non autorisé.
+      404:
+        description: Emprunt non trouvé.
     """
     loan = Loan.query.get_or_404(loan_id)
 
@@ -214,19 +227,23 @@ def update_loan(loan_id):
 @jwt_required()
 def get_user_loans(user_id):
     """
-    Récupérer les prêts d'un utilisateur
-    
+    Lister les emprunts d'un utilisateur spécifique
+    Accessible par l'utilisateur concerné ou un admin.
+    ---
     tags:
-        - loans
+      - Emprunts
+    security:
+      - Bearer: []
     parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
+      - name: user_id
+        in: path
+        type: integer
+        required: true
     responses:
-        200:
-            description: Liste des prêts de l'utilisateur récupérée
+      200:
+        description: Une liste des emprunts de l'utilisateur.
+      403:
+        description: Accès non autorisé.
     """
     current_user_id = get_jwt_identity()
     current_user = User.query.get(current_user_id)
@@ -254,21 +271,24 @@ def get_user_loans(user_id):
 @jwt_required()
 def delete_loan(loan_id):
     """
-    Supprimer un prêt
-
+    Supprimer un emprunt (Admin requis)
+    ---
     tags:
-        - loans
-
-        parameters:
-        - in: path
-          name: loan_id
-          required: true
-          schema:
-            type: integer
-            responses:
-                200:
-                    description: prêt supprimé avec succès
-
+      - Emprunts
+    security:
+      - Bearer: []
+    parameters:
+      - name: loan_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Emprunt supprimé avec succès.
+      403:
+        description: Accès non autorisé (admin requis).
+      404:
+        description: Emprunt non trouvé.
     """
     err = _require_admin()
     if err:

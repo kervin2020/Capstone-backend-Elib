@@ -2,9 +2,8 @@ import os
 from werkzeug.security import generate_password_hash
 from flask.cli import with_appcontext
 import click
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flasgger import Swagger
-from swagger_config import swagger_template, swagger_config
 from dotenv import load_dotenv
 
 # Import des extensions Flask
@@ -17,8 +16,7 @@ from models import User, Ebook, Category, Loan
 from routes.route_user import user_bp
 from routes.routes_ebook import ebook_bp
 from routes.route_category import category_bp
-from routes.route_loan import loan_bp
-from api_docs import api_bp
+from routes.route_loan import loan_bp 
 
 # Import des utilitaires
 from utils.check_expired_loans import check_and_notify
@@ -27,10 +25,33 @@ from utils.email_service import send_email
 # Charger les variables d'environnement
 load_dotenv()
 
+swagger_template = {
+    "swagger": "2.0",
+    "info": {
+        "title": "E-Lib API - Système de Gestion de Bibliothèque",
+        "description": "API pour le système de gestion de bibliothèque E-Lib.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Support E-Lib",
+            "email": "support@elib.com"
+        }
+    },
+    "host": "localhost:5000",  # Mettre à jour si nécessaire
+    "basePath": "/api",
+    "schemes": ["http"],
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Token JWT au format: Bearer <token>"
+        }
+    }
+}
 
-# =====================================================
+
+
 # Configuration de l'application Flask
-# =====================================================
 def create_app():
     app = Flask(__name__)
     app.config.from_object('config.Config')
@@ -63,7 +84,20 @@ def create_app():
         return response
 
     # Swagger (documentation API)
-    Swagger(app, config=swagger_config, template=swagger_template)
+    Swagger(app, template=swagger_template, config={
+        "headers": [],
+        "specs_route": "/api/docs/",
+        "swagger_ui": True,
+        "specs": [
+            {
+                "endpoint": 'apispec_1',
+                "route": '/apispec_1.json',
+                "rule_filter": lambda rule: True,  # Inclure toutes les routes
+                "model_filter": lambda tag: True,  # Inclure tous les modèles
+            }
+        ],
+        "static_url_path": "/flasgger_static"
+    })
 
     # Route de test (affiche toutes les routes disponibles)
     @app.route('/')
@@ -81,7 +115,6 @@ def create_app():
     app.register_blueprint(ebook_bp, url_prefix='/api')
     app.register_blueprint(category_bp, url_prefix='/api')
     app.register_blueprint(loan_bp, url_prefix='/api')
-    app.register_blueprint(api_bp)
 
     # Création des tables si elles n'existent pas
     with app.app_context():
@@ -93,9 +126,6 @@ def create_app():
     return app
 
 
-# =====================================================
-# Commande personnalisée : flask create-admin
-# =====================================================
 @click.command('create-admin')
 @with_appcontext
 @click.argument('email')
@@ -118,14 +148,10 @@ def register_commands(app):
     app.cli.add_command(create_admin)
 
 
-# =====================================================
-# Instance globale pour Gunicorn (Render, etc.)
-# =====================================================
-app = create_app()  # ✅ Permet à Render de lancer gunicorn app:app
+
+app = create_app()  
 
 
-# =====================================================
-# Lancement local
-# =====================================================
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

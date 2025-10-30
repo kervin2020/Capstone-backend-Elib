@@ -37,34 +37,35 @@ def _require_admin(user_id=None):
 @user_bp.route('/users', methods=['POST'])
 def create_user():
     """ 
-     creer une nouvelle utilisateur
-
-     tag:
-       - users
-    parameter:
-        - in: body
-          name: user
-          schema:
-            type: object
-            properties:
-              username:
-                type: string
-              email:
-                type: string
-              password:
-                type: string
-              is_admin:
-                type: boolean
-            required:
-              - username
-              - email
-              - password
+    Créer un nouvel utilisateur (inscription)
+    ---
+    tags:
+      - Utilisateurs
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - username
+            - email
+            - password
+          properties:
+            username:
+              type: string
+            email:
+              type: string
+            password:
+              type: string
+            is_admin:
+              type: boolean
+              default: false
     responses:
-        201:
-            description: Utilisateur creer avec succes
-        400:
-            description: Donnees invalides
-
+      201:
+        description: Utilisateur créé avec succès.
+      400:
+        description: Données manquantes ou email déjà utilisé.
     """
     data = request.get_json()
 
@@ -96,18 +97,17 @@ def create_user():
 @jwt_required()
 def get_users():
     """ 
-    liste tous les utilisateurs (administrateur requis)
-
+    Lister tous les utilisateurs (Admin requis)
+    ---
     tags:
-        - users
-    securite:
-        - jwt: [ ]
+      - Utilisateurs
+    security:
+      - Bearer: []
     responses:
-        200:
-            description: Liste des utilisateurs
-        403:
-            description: Accès interdit, vous n'êtes pas administrateur
-    
+      200:
+        description: Une liste de tous les utilisateurs.
+      403:
+        description: Accès non autorisé (admin requis).
     """
     err = _require_admin()
     if err:
@@ -130,18 +130,25 @@ def get_users():
 @jwt_required()
 def get_user(user_id):
     """ 
-    afficher un utilisateur specifique (administrateur ou proprietaire requis)
-
+    Obtenir les détails d'un utilisateur spécifique
+    Accessible par l'utilisateur concerné ou un admin.
+    ---
     tags:
-        - users
-    securite:
-        - jwt: [ ]
+      - Utilisateurs
+    security:
+      - Bearer: []
+    parameters:
+      - name: user_id
+        in: path
+        type: integer
+        required: true
     responses:
-        200:
-            description: Détails de l'utilisateur
-        403:
-            description: Accès interdit, vous n'êtes pas administrateur ou propriétaire du compte
-    
+      200:
+        description: Détails de l'utilisateur.
+      403:
+        description: Accès non autorisé.
+      404:
+        description: Utilisateur non trouvé.
     """
     err = _require_admin(user_id)
     if err:
@@ -161,6 +168,34 @@ def get_user(user_id):
 @user_bp.route('/users/<int:user_id>', methods=['PUT'])
 @jwt_required()
 def update_user(user_id):
+    """
+    Mettre à jour un utilisateur
+    Accessible par l'utilisateur concerné ou un admin.
+    ---
+    tags:
+      - Utilisateurs
+    security:
+      - Bearer: []
+    parameters:
+      - name: user_id
+        in: path
+        type: integer
+        required: true
+      - in: body
+        name: body
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+            email:
+              type: string
+    responses:
+      200:
+        description: Utilisateur mis à jour avec succès.
+      403:
+        description: Accès non autorisé.
+    """
     err = _require_admin(user_id)
     if err:
         return err
@@ -192,18 +227,23 @@ def update_user(user_id):
 @jwt_required()
 def delete_user(user_id):
     """
-    suprimmer un tilisateur (administrateur ou proprietaire requis)
-
+    Supprimer un utilisateur
+    Accessible par l'utilisateur concerné ou un admin.
+    ---
     tags:
-        - users
-        securite:
-        - jwt: [ ]
+      - Utilisateurs
+    security:
+      - Bearer: []
+    parameters:
+      - name: user_id
+        in: path
+        type: integer
+        required: true
     responses:
-        200:
-            description: Utilisateur supprimé avec succès
-        403:
-            description: Accès interdit, vous n'êtes pas administrateur ou propriétaire du compte
-    
+      200:
+        description: Utilisateur supprimé avec succès.
+      403:
+        description: Accès non autorisé.
     """
     err = _require_admin(user_id)
     if err:
@@ -221,16 +261,17 @@ def delete_user(user_id):
 @jwt_required()
 def get_current_user():
     """
-    récupérer l'utilisateur connecté
-
+    Obtenir les détails de l'utilisateur actuellement connecté
+    ---
     tags:
-         -users
-    securite:
-        - jwt: [ ]
+      - Utilisateurs
+    security:
+      - Bearer: []
     responses:
-        200:
-            description: Détails de l'utilisateur connecté   
-
+      200:
+        description: Détails de l'utilisateur connecté.
+      404:
+        description: Utilisateur non trouvé.
     """
     user_id = get_jwt_identity()
     user = User.query.get_or_404(user_id)
@@ -247,30 +288,31 @@ def get_current_user():
 @user_bp.route('/login', methods=['POST'])
 def login():
     """
-    connexion utilisateur
-
-     tags:
-        - users
-    parameter:
-        - in: body
-          name: credentials
-          schema:
-            type: object
-            properties:
-              email:
-                type: string
-                password:
-                type: string
-            required:
-              - email
-              - password
+    Connexion d'un utilisateur pour obtenir un token JWT
+    ---
+    tags:
+      - Authentification
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - email
+            - password
+          properties:
+            email:
+              type: string
+            password:
+              type: string
     responses:
-        200:
-            description: Connexion réussie
-        400:
-            description: Email et mot de passe sont requis
-        401:
-            description: Email ou mot de passe incorrect
+      200:
+        description: Connexion réussie, retourne un access_token.
+      400:
+        description: Email ou mot de passe manquant.
+      401:
+        description: Identifiants invalides.
     """
     data = request.get_json()
 
